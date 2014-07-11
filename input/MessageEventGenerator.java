@@ -19,6 +19,7 @@ public class MessageEventGenerator implements EventQueue {
 	 * value or a range (min, max) of uniformly distributed random values.
 	 * Defines the message size (bytes). */
 	public static final String MESSAGE_SIZE_S = "size";
+        public static final String MESSAGE_RSIZE_S = "rsize";
 	/** Message creation interval range -setting id ({@value}). Can be either a 
 	 * single value or a range (min, max) of uniformly distributed 
 	 * random values. Defines the inter-message creation interval (seconds). */
@@ -57,6 +58,8 @@ public class MessageEventGenerator implements EventQueue {
 	protected String idPrefix;
 	/** Size range of the messages (min, max) */
 	private int[] sizeRange;
+        /** Size range of the reply messages (min, max) */
+	private int[] rsizeRange;
 	/** Interval between messages (min, max) */
 	private int[] msgInterval;
 	/** Time range for message creation (min, max) */
@@ -73,6 +76,7 @@ public class MessageEventGenerator implements EventQueue {
 	 */
 	public MessageEventGenerator(Settings s){
 		this.sizeRange = s.getCsvInts(MESSAGE_SIZE_S);
+		this.rsizeRange = s.getCsvInts(MESSAGE_RSIZE_S);
 		this.msgInterval = s.getCsvInts(MESSAGE_INTERVAL_S);
 		this.hostRange = s.getCsvInts(HOST_RANGE_S, 2);
 		this.idPrefix = s.getSetting(MESSAGE_ID_PREFIX_S);
@@ -99,6 +103,13 @@ public class MessageEventGenerator implements EventQueue {
 		}
 		else {
 			s.assertValidRange(this.sizeRange, MESSAGE_SIZE_S);
+		}
+		if (this.rsizeRange.length == 1) {
+			/* convert single value to range with 0 length */
+			this.rsizeRange = new int[] {this.rsizeRange[0], this.rsizeRange[0]};
+		}
+		else {
+			s.assertValidRange(this.rsizeRange, MESSAGE_RSIZE_S);
 		}
 		if (this.msgInterval.length == 1) {
 			this.msgInterval = new int[] {this.msgInterval[0], 
@@ -153,6 +164,12 @@ public class MessageEventGenerator implements EventQueue {
 			rng.nextInt(sizeRange[1] - sizeRange[0]);
 		return sizeRange[0] + sizeDiff;
 	}
+
+	protected int drawResponseMessageSize() {
+		int sizeDiff = rsizeRange[0] == rsizeRange[1] ? 0 : 
+			rng.nextInt(rsizeRange[1] - rsizeRange[0]);
+		return rsizeRange[0] + sizeDiff;
+	}
 	
 	/**
 	 * Generates a (random) time difference between two events
@@ -186,9 +203,9 @@ public class MessageEventGenerator implements EventQueue {
 	 * @see input.EventQueue#nextEvent()
 	 */
 	public ExternalEvent nextEvent() {
-		int responseSize = 0; /* zero stands for one way messages */
+	        int responseSize;
 		int msgSize;
-		int interval;
+	 	int interval;
 		int from;
 		int to;
 		
@@ -197,6 +214,7 @@ public class MessageEventGenerator implements EventQueue {
 		to = drawToAddress(hostRange, from);
 		
 		msgSize = drawMessageSize();
+		responseSize = drawResponseMessageSize();
 		interval = drawNextEventTimeDiff();
 		
 		/* Create event and advance to next event */

@@ -44,7 +44,7 @@ public class OneFromEachMessageGenerator extends MessageEventGenerator {
 	 * @see input.EventQueue#nextEvent()
 	 */
 	public ExternalEvent nextEvent() {
-		int responseSize = 0; /* no responses requested */
+	        int responseSize;
 		int from;
 		int to;
 		
@@ -67,7 +67,7 @@ public class OneFromEachMessageGenerator extends MessageEventGenerator {
 		}
 				
 		MessageCreateEvent mce = new MessageCreateEvent(from, to, getID(), 
-				drawMessageSize(), responseSize, this.nextEventsTime);
+								drawMessageSize(), drawResponseMessageSize(), this.nextEventsTime);
 		
 		return mce;
 	}
